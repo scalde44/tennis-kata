@@ -1,76 +1,60 @@
+import org.javatuples.Pair;
 
 public class TennisGame1 implements TennisGame {
-    
-    private int m_score1 = 0;
-    private int m_score2 = 0;
-    private String player1Name;
-    private String player2Name;
+    private static final Score[] SCORES = new Score[]{Score.LOVE, Score.FIFTEEN, Score.THIRTY, Score.FORTY};
+    private static final String CONCATENATOR = "-";
+    private static final String ADVANTAGE = "Advantage %s";
+    private static final String WIN_FOR = "Win for %s";
+    private static final int MINIMUM_POINTS_FOR_WINNER = 4;
+    private static final int MINIMUM_DIFFERENCE_FOR_WINNER = 2;
+    private final Player firstPlayer;
+    private final Player secondPlayer;
 
-    public TennisGame1(String player1Name, String player2Name) {
-        this.player1Name = player1Name;
-        this.player2Name = player2Name;
+    public TennisGame1(String firstPlayerName, String secondPlayerName) {
+        this.firstPlayer = new Player(firstPlayerName);
+        this.secondPlayer = new Player(secondPlayerName);
     }
 
     public void wonPoint(String playerName) {
-        if (playerName == "player1")
-            m_score1 += 1;
-        else
-            m_score2 += 1;
+        getPlayerByName(playerName).addPoint();
+    }
+
+    private Player getPlayerByName(String name) {
+        return (firstPlayer.isNamed(name)) ? firstPlayer : secondPlayer;
+    }
+
+    private boolean isTie() {
+        return firstPlayer.score() == secondPlayer.score();
+    }
+
+    private boolean isMinimumPointsForWinner() {
+        return firstPlayer.score() >= MINIMUM_POINTS_FOR_WINNER || secondPlayer.score() >= MINIMUM_POINTS_FOR_WINNER;
+    }
+
+    private String getResultByScore(int score) {
+        return SCORES[score].getName();
+    }
+
+    private String getResultByScoreTie(int score) {
+        return getResultByScore(score).concat(CONCATENATOR).concat(Score.ALL.getName());
+    }
+
+    private Pair<Player, Integer> getAdvantagePlayer() {
+        Integer difference = firstPlayer.score() - secondPlayer.score();
+        return (difference > 0) ?
+                new Pair<>(firstPlayer, difference) :
+                new Pair<>(secondPlayer, Math.abs(difference));
     }
 
     public String getScore() {
-        String score = "";
-        int tempScore=0;
-        if (m_score1==m_score2)
-        {
-            switch (m_score1)
-            {
-                case 0:
-                        score = "Love-All";
-                    break;
-                case 1:
-                        score = "Fifteen-All";
-                    break;
-                case 2:
-                        score = "Thirty-All";
-                    break;
-                default:
-                        score = "Deuce";
-                    break;
-                
-            }
+        if (isTie()) {
+            return (firstPlayer.score() < 3) ? getResultByScoreTie(firstPlayer.score()) : Score.DEUCE.getName();
         }
-        else if (m_score1>=4 || m_score2>=4)
-        {
-            int minusResult = m_score1-m_score2;
-            if (minusResult==1) score ="Advantage player1";
-            else if (minusResult ==-1) score ="Advantage player2";
-            else if (minusResult>=2) score = "Win for player1";
-            else score ="Win for player2";
+        if (isMinimumPointsForWinner()) {
+            Pair<Player, Integer> advantagePlayer = getAdvantagePlayer();
+            String playerName = advantagePlayer.getValue0().name();
+            return (advantagePlayer.getValue1() < MINIMUM_DIFFERENCE_FOR_WINNER) ? String.format(ADVANTAGE, playerName) : String.format(WIN_FOR, playerName);
         }
-        else
-        {
-            for (int i=1; i<3; i++)
-            {
-                if (i==1) tempScore = m_score1;
-                else { score+="-"; tempScore = m_score2;}
-                switch(tempScore)
-                {
-                    case 0:
-                        score+="Love";
-                        break;
-                    case 1:
-                        score+="Fifteen";
-                        break;
-                    case 2:
-                        score+="Thirty";
-                        break;
-                    case 3:
-                        score+="Forty";
-                        break;
-                }
-            }
-        }
-        return score;
+        return getResultByScore(firstPlayer.score()).concat(CONCATENATOR).concat(getResultByScore(secondPlayer.score()));
     }
 }
